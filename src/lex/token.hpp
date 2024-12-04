@@ -17,10 +17,10 @@ struct Token {
       >;
 
   Token(TokenType type, Location start, SemInfo sem_info = {})
-      : type{type}, location{start}, sem_info{sem_info} {
+      : type{type}, start{start}, sem_info{sem_info} {
   }
 
-  static Token UnitToken(Location loc) {
+  static Token UnitToken(Location start, Location end) {
     return Token(TokenType::UNIT, loc);
   }
 
@@ -38,7 +38,8 @@ struct Token {
 
   TokenType type;
 
-  Location location;
+  Location start;
+  Location end;
 
   SemInfo sem_info;
 };
