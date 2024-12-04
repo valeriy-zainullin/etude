@@ -82,6 +82,12 @@ class Module {
     return global_context.FindLocalSymbol(name);
   }
 
+  void RunTooling(Visitor& visitor) {
+    for (Declaration* decl: items_) {
+      decl->Accept(&visitor);
+    }
+  }
+
  private:
   std::string_view name_;
 

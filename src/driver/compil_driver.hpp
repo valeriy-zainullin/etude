@@ -128,6 +128,35 @@ class CompilationDriver {
     main_module_ = mod;
   }
 
+  void PrepareForTooling() {
+    ParseAllModules();
+    RegisterSymbols();
+
+    // Those in the beginning have the least dependencies (see TopSort(...))
+    for (size_t i = 0; i < modules_.size(); i += 1) {
+      ProcessModule(&modules_[i]);
+    }
+
+    for (auto& m : modules_) {
+      m.InferTypes(solver_);
+    }
+
+    if (test_build) {
+      FMT_ASSERT(modules_.back().GetName() == main_module_,
+                 "Last module should be the main one");
+      return;
+    }
+  }
+  
+  void RunVisitor(Visitor& visitor) {
+    // Модуль, который был основным, находится в конце списка модулей
+    //   после тополнической сортировки. Т.к. в него все ребра входили,
+    //   но никакие не выходили: если кто-то его импортирует, мы об этом
+    //   не знаем.
+
+    modules_.back().RunTooling(visitor);
+  }
+
   void Compile() {
     ParseAllModules();
     RegisterSymbols();
