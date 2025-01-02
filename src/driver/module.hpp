@@ -82,9 +82,9 @@ class Module {
     return global_context.FindLocalSymbol(name);
   }
 
-  void RunTooling(Visitor& visitor) {
+  void RunTooling(Visitor* visitor) {
     for (Declaration* decl: items_) {
-      decl->Accept(&visitor);
+      decl->Accept(visitor);
     }
   }
 
