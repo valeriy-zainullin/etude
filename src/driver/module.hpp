@@ -14,6 +14,8 @@
 
 #include <lex/location.hpp>
 
+#include <filesystem>
+
 //////////////////////////////////////////////////////////////////////
 
 class CompilationDriver;
@@ -22,6 +24,12 @@ class Module {
  public:
   friend class Parser;
 
+  Module()
+    : global_context{.name = std::string_view(), .unit = *this, .location = lex::Location{0, 0}} {
+      namespace fs = std::filesystem;
+      full_path = std::string(fs::absolute(fs::path(name_)));
+    }
+
   void SetName(std::string_view name) {
     name_ = name;
   }
@@ -29,7 +37,7 @@ class Module {
   void BuildContext(CompilationDriver* driver) {
     global_context.driver = driver;
 
-    ast::scope::ContextBuilder ctx_builder{global_context};
+    ast::scope::ContextBuilder ctx_builder{*this, global_context};
     types::constraints::ExpandTypeVariables expand;
 
     for (auto item : items_) {
@@ -88,8 +96,13 @@ class Module {
     }
   }
 
+  std::string GetPath() {
+    return full_path;
+  }
+
  private:
   std::string_view name_;
+  std::string full_path;
 
   ast::scope::Context global_context;
 

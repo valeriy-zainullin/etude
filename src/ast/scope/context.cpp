@@ -63,6 +63,7 @@ Symbol* Context::FindFromExported(std::string_view name, bool nothrow = false) {
 Context* Context::MakeNewScopeLayer(lex::Location loc, std::string_view name) {
   auto child = new Context{
       .name = name,
+      .unit = unit,
       .location = loc,
       .level = level + 1,
       .parent = this,
