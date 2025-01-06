@@ -25,13 +25,18 @@ class Module {
   friend class Parser;
 
   Module()
-    : global_context{.name = std::string_view(), .unit = *this, .location = lex::Location{0, 0}} {
-      namespace fs = std::filesystem;
-      full_path = std::string(fs::absolute(fs::path(name_)));
+    : global_context{
+      .name = std::string_view(),
+      .unit = *this,
+      .location = lex::Location{0, 0}
     }
+  {}
 
   void SetName(std::string_view name) {
     name_ = name;
+
+    namespace fs = std::filesystem;
+    full_path = std::string(fs::absolute(fs::path(name_)));
   }
 
   void BuildContext(CompilationDriver* driver) {
