@@ -2,7 +2,20 @@
 
 namespace types {
 
+// Should be in CompilationDriver, probably.
+//   Was a pain for tooling, where we run
+//   compiler multiple times. It references
+//   addreses of symbols that are gone, they
+//   were from the previous run.
+//   Fix is to clear this global variable.
+//   But really it could be supplied by the
+//   compilation driver to some function
+//   doing job.
 static Type::Arena type_store{};
+
+void ClearTypeStorage() {
+  type_store.clear();
+}
 
 //////////////////////////////////////////////////////////////////////
 

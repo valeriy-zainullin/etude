@@ -25,12 +25,15 @@ class Module {
   friend class Parser;
 
   Module()
-    : global_context{
+    : global_context(std::make_unique<ast::scope::Context>(ast::scope::Context{
       .name = std::string_view(),
       .unit = *this,
       .location = lex::Location{0, 0}
-    }
+    }))
   {}
+
+  Module(Module&&) = default;
+  Module(const Module&) = delete;
 
   void SetName(std::string_view name) {
     name_ = name;
@@ -40,9 +43,9 @@ class Module {
   }
 
   void BuildContext(CompilationDriver* driver) {
-    global_context.driver = driver;
+    global_context->driver = driver;
 
-    ast::scope::ContextBuilder ctx_builder{*this, global_context};
+    ast::scope::ContextBuilder ctx_builder{*this, *global_context.get()};
     types::constraints::ExpandTypeVariables expand;
 
     for (auto item : items_) {
@@ -92,7 +95,7 @@ class Module {
   std::vector<std::string_view> exported_;
 
   ast::scope::Symbol* GetExportedSymbol(std::string_view name) {
-    return global_context.FindLocalSymbol(name);
+    return global_context->FindLocalSymbol(name);
   }
 
   void RunTooling(Visitor* visitor) {
@@ -109,7 +112,7 @@ class Module {
   std::string_view name_;
   std::string full_path;
 
-  ast::scope::Context global_context;
+  std::unique_ptr<ast::scope::Context> global_context;
 
   // Actual code item from this module
   std::vector<Declaration*> items_;

@@ -25,6 +25,12 @@ class CompilationDriver {
  public:
   CompilationDriver(std::string_view main_mod = "main")
       : main_module_{main_mod} {
+    // Types from previous run will reference already freed
+    //    ast::scope::Symbols, we don't need them nor really
+    //    should touch them or we'll get use after free.
+    // Needed for multiple compilation driver invocations
+    //    in one run, this approach is used by language server.
+    types::ClearTypeStorage();
   }
 
   // 1. Searches in different places
@@ -111,7 +117,7 @@ class CompilationDriver {
     }
 
     visited.insert_or_assign(node->GetName(), FINISHED);
-    sort.push_back(*node);
+    sort.push_back(std::move(*node));
   }
 
   // All its dependencies have already been completed
