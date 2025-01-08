@@ -34,9 +34,16 @@ class CompilationDriver {
     types::ClearTypeStorage();
   }
 
+  virtual ~CompilationDriver() = default;
+
   // 1. Searches in different places
   // 2. Opens the files and converts to ss
-  std::stringstream OpenFile(std::string_view name) {
+  // May be overriden by a derived class to search different places.
+  //   Say, you have a filesystem layer that takes priority over
+  //   files on disk (unsaved contents of files for language
+  //   server) or package repository somewhere (tried to find
+  //   another reason)...
+  virtual std::stringstream OpenFile(std::string_view name) {
     auto module_name = std::string{name} + ".et";
 
     std::ifstream file(module_name);
@@ -140,35 +147,6 @@ class CompilationDriver {
     main_module_ = mod;
   }
 
-  void PrepareForTooling() {
-    ParseAllModules();
-    RegisterSymbols();
-
-    // Those in the beginning have the least dependencies (see TopSort(...))
-    for (size_t i = 0; i < modules_.size(); i += 1) {
-      ProcessModule(&modules_[i]);
-    }
-
-    for (auto& m : modules_) {
-      m.InferTypes(solver_);
-    }
-
-    if (test_build) {
-      FMT_ASSERT(modules_.back().GetName() == main_module_,
-                 "Last module should be the main one");
-      return;
-    }
-  }
-  
-  void RunVisitor(Visitor* visitor) {
-    // Модуль, который был основным, находится в конце списка модулей
-    //   после тополнической сортировки. Т.к. в него все ребра входили,
-    //   но никакие не выходили: если кто-то его импортирует, мы об этом
-    //   не знаем.
-
-    modules_.back().RunTooling(visitor);
-  }
-
   void Compile() {
     ParseAllModules();
     RegisterSymbols();
@@ -199,7 +177,7 @@ class CompilationDriver {
     return module_of_.contains(symbol) ? module_of_[symbol] : nullptr;
   }
 
- private:
+ protected:
   std::string_view main_module_;
 
   // For each import map `symbol_name -> module`
