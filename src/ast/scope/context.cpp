@@ -1,6 +1,7 @@
 #include <driver/compil_driver.hpp>
 #include <ast/scope/context.hpp>
 #include <types/type.hpp>
+#include <ast/error_at_location.hpp>
 
 namespace ast::scope {
 
@@ -54,7 +55,7 @@ Symbol* Context::FindFromExported(std::string_view name, bool nothrow = false) {
     return nullptr;
   } else {
     Print();
-    throw std::runtime_error{fmt::format("No such symbol {}\n", name)};
+    throw ErrorAtLocation(location, fmt::format("No such symbol {}\n", name));
   }
 }
 

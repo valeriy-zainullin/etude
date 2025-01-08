@@ -39,7 +39,7 @@ class Module {
     name_ = name;
 
     namespace fs = std::filesystem;
-    full_path = std::string(fs::absolute(fs::path(name_)));
+    full_path = std::string(fs::absolute(fs::path(name_))) + ".et";
   }
 
   void BuildContext(CompilationDriver* driver) {
@@ -91,7 +91,7 @@ class Module {
     return name_;
   }
 
-  std::vector<std::string_view> imports_;
+  std::vector<lex::Token> imports_;
   std::vector<std::string_view> exported_;
 
   ast::scope::Symbol* GetExportedSymbol(std::string_view name) {

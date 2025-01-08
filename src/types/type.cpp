@@ -1,5 +1,7 @@
 #include <types/type.hpp>
 
+#include <ast/error_at_location.hpp>
+
 namespace types {
 
 // Should be in CompilationDriver, probably.
@@ -441,7 +443,10 @@ Type* ApplyTyconsLazy(Type* ty) {
   auto& pack = ty->as_tyapp.param_pack;
 
   if (pack.size() != names.size()) {
-    throw std::runtime_error("Instantination size mismatch");
+    throw ErrorAtLocation(
+      symbol->declared_at.position,
+      fmt::format("Instantination size mismatch between {} and {}", symbol->GetType()->Format(), ty->Format())
+    );
   }
 
   std::unordered_map<std::string_view, Type*> map;

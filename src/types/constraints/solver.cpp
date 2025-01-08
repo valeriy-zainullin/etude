@@ -2,6 +2,8 @@
 #include <types/constraints/expand/expand.hpp>
 #include <types/constraints/generate/algorithm_w.hpp>
 
+#include <ast/error_at_location.hpp>
+
 namespace types::constraints {
 
 ConstraintSolver::ConstraintSolver() {
@@ -47,7 +49,7 @@ void ConstraintSolver::CollectAndSolve() {
 
     if (work_queue_.size()) {
       PrintQueue();
-      throw std::runtime_error{"Residual constraints remain!"};
+      throw ErrorAtLocation(work_queue_.front().location, "Residual constraints remain!");
     }
   }
 
@@ -224,7 +226,7 @@ void ConstraintSolver::SolveBatch() {
 
   if (errors_.size()) {
     ReportErrors();
-    throw std::runtime_error{"Final unification error"};
+    throw ErrorAtLocation(errors_.front().location, "Final unification error");
   }
 }
 

@@ -1,6 +1,8 @@
 #include <types/constraints/solver.hpp>
 #include <types/constraints/trait.hpp>
 
+#include <ast/error_at_location.hpp>
+
 #include <unordered_map>
 
 namespace types::constraints {
@@ -68,14 +70,27 @@ bool ConstraintSolver::UnifyUnderlyingTypes(Type* a, Type* b) {
       auto& b_mem = b->as_sum.first;
 
       if (a_mem.size() != b_mem.size()) {
-        throw std::runtime_error{"Inference error: struct size mismatch"};
+        throw ErrorAtLocation(
+          a->typing_context_ != nullptr ? a->typing_context_->location : lex::Location(0, 0),
+          fmt::format("Inference error: struct size mismatch between {} and {}", a->Format(), b->Format())
+        );
       }
 
       // Also don't forget to check the names!
 
       for (size_t i = 0; i < a_mem.size(); i++) {
         if (a_mem[i].field != b_mem[i].field) {
-          throw std::runtime_error{"Inference error: sum field mismatch"};
+          throw ErrorAtLocation(
+            a->typing_context_ != nullptr ? a->typing_context_->location : lex::Location(0, 0),
+            fmt::format(
+              "Inference error: Inference error: sum field mismatch between {} and {}, field index {}, {} != {}",
+              a->Format(),
+              b->Format(),
+              i,
+              a_mem[i].field,
+              b_mem[i].field
+            )
+          );
         }
 
         if (!Unify(a_mem[i].ty, b_mem[i].ty)) {

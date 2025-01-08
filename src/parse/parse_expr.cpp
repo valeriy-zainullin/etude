@@ -84,9 +84,7 @@ Expression* Parser::ParseIfExpression() {
   auto true_branch = ParseExpression();
 
   if (!condition || !true_branch) {
-    throw parse::errors::ParseTrueBlockError{
-        location_token.location.Format(),
-    };
+    throw parse::errors::ParseTrueBlockError(location_token.location);
   }
 
   Expression* false_branch = nullptr;
@@ -458,8 +456,7 @@ Expression* Parser::ParsePrimary() {
     }
 
     default: {
-      auto location = token.location.Format();
-      throw parse::errors::ParsePrimaryError{location};
+      throw parse::errors::ParsePrimaryError(token.location);
     }
   }
 

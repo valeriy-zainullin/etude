@@ -2,8 +2,10 @@
 #include <types/constraints/solver.hpp>
 
 #include <ast/patterns.hpp>
+#include <ast/error_at_location.hpp>
 
 #include <lex/token.hpp>
+
 
 namespace types::instantiate {
 
@@ -198,7 +200,10 @@ bool TemplateInstantiator::BuildSubstitution(Type* poly, Type* mono,
       auto& pack2 = mono->as_fun.param_pack;
 
       if (pack.size() != pack2.size()) {
-        throw std::runtime_error{"Function unification size mismatch"};
+        throw ErrorAtLocation(
+          poly->typing_context_ != nullptr ? poly->typing_context_->location : lex::Location(0, 0),
+          fmt::format("Function unification size mismatch between {} and {}", poly->Format(), mono->Format())
+        );
       }
 
       for (size_t i = 0; i < pack.size(); i++) {

@@ -7,6 +7,7 @@
 
 #include <ast/elaboration/mark_intrinsics.hpp>
 #include <ast/scope/context_builder.hpp>
+#include <ast/error_at_location.hpp>
 
 #include <parse/parse_error.hpp>
 #include <parse/parser.hpp>
@@ -101,19 +102,24 @@ class CompilationDriver {
   };
 
   void TopSort(Module* node, std::vector<Module>& sort,
-               std::unordered_map<std::string_view, walk_status>& visited) {
+               std::unordered_map<std::string_view, walk_status>& visited,
+               size_t depth = 1) {
     for (auto& m : node->imports_) {
-      if (visited.contains(m)) {
-        if (visited[m] == IN_PROGRESS) {
-          throw std::runtime_error{"Cycle in import higherarchy"};
+      if (visited.contains(m.GetName())) {
+        if (visited[m.GetName()] == IN_PROGRESS) {
+          throw ErrorAtLocation(m.location, "Cycle in import higherarchy");
         }
         continue;
       }
 
       visited.insert({m, IN_PROGRESS});
-      auto [mod, lex] = ParseOneModule(m);
-      TopSort(&mod, sort, visited);
-      lexers_.push_back(std::move(lex));
+      try {
+        auto [mod, lex] = ParseOneModule(m);
+        TopSort(&mod, sort, visited, depth + 1);
+        lexers_.push_back(std::move(lex));
+      } catch (const std::exception& exc) {
+        throw ErrorAtLocation(m.location, std::string(exc.what()));
+      }
     }
 
     visited.insert_or_assign(node->GetName(), FINISHED);
