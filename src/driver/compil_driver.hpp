@@ -43,8 +43,9 @@ class CompilationDriver {
   //   files on disk (unsaved contents of files for language
   //   server) or package repository somewhere (tried to find
   //   another reason)...
-  virtual std::stringstream OpenFile(std::string_view name) {
+  virtual lex::InputFile OpenFile(std::string_view name) {
     auto module_name = std::string{name} + ".et";
+    auto abs_path = std::filesystem::absolute(module_name);
 
     std::ifstream file(module_name);
 
@@ -52,6 +53,7 @@ class CompilationDriver {
       if (auto path = std::getenv("ETUDE_STDLIB")) {
         std::filesystem::path stdlib{path};
         file = std::ifstream(stdlib / module_name);
+        abs_path = std::filesystem::absolute(stdlib / module_name);
       } else {
         throw NoStdlibError(name);
       }
@@ -61,35 +63,32 @@ class CompilationDriver {
       throw std::runtime_error{fmt::format("Could not open file {}", name)};
     }
 
-    // This is dumb! Lexer can take istream directly
-
     auto t = std::string(std::istreambuf_iterator<char>(file),
                          std::istreambuf_iterator<char>());
-    return std::stringstream{std::move(t)};
+    return lex::InputFile{std::stringstream{std::move(t)}, std::move(abs_path)};
   }
 
-  auto ParseOneModule(std::string_view name) -> std::pair<Module, lex::Lexer> {
+  auto ParseOneModule(std::string_view name) -> std::pair<std::unique_ptr<Module>, lex::Lexer> {
     auto source = OpenFile(name);
-    auto lexer = lex::Lexer{source};
+    auto lexer = lex::Lexer{std::move(source)};
 
     auto mod = Parser{lexer}.ParseModule();
-    mod.SetName(name);
+    mod->SetName(name);
 
     return {std::move(mod), std::move(lexer)};
   }
 
   auto ParseAllModules() {
     auto [main, lex] = ParseOneModule(main_module_);
-    modules_.reserve(16);
     std::unordered_map<std::string_view, walk_status> visited;
-    TopSort(&main, modules_, visited);
+    TopSort(std::move(main), modules_, visited);
     lexers_.push_back(std::move(lex));
   }
 
   auto RegisterSymbols() {
     for (auto& m : modules_) {
-      for (auto& exported_sym : m.exported_) {
-        auto did_insert = module_of_.insert({exported_sym, &m}).second;
+      for (auto& exported_sym : m->exported_) {
+        auto did_insert = module_of_.insert({exported_sym, m.get()}).second;
 
         // THINK: Is module import transitive?
 
@@ -108,9 +107,8 @@ class CompilationDriver {
     NOT_SEEN,
   };
 
-  void TopSort(Module* node, std::vector<Module>& sort,
-               std::unordered_map<std::string_view, walk_status>& visited,
-               size_t depth = 1) {
+  void TopSort(std::unique_ptr<Module> node, std::vector<std::unique_ptr<Module>>& sort,
+               std::unordered_map<std::string_view, walk_status>& visited) {
     for (auto& m : node->imports_) {
       if (visited.contains(m.GetName())) {
         if (visited[m.GetName()] == IN_PROGRESS) {
@@ -122,7 +120,7 @@ class CompilationDriver {
       visited.insert({m, IN_PROGRESS});
       try {
         auto [mod, lex] = ParseOneModule(m);
-        TopSort(&mod, sort, visited, depth + 1);
+        TopSort(std::move(mod), sort, visited);
         lexers_.push_back(std::move(lex));
       } catch (const std::exception& exc) {
         throw ErrorAtLocation(m.location, std::string(exc.what()));
@@ -130,7 +128,7 @@ class CompilationDriver {
     }
 
     visited.insert_or_assign(node->GetName(), FINISHED);
-    sort.push_back(std::move(*node));
+    sort.push_back(std::move(node));
   }
 
   // All its dependencies have already been completed
@@ -153,17 +151,17 @@ class CompilationDriver {
 
     // Those in the beginning have the least dependencies (see TopSort(...))
     for (size_t i = 0; i < modules_.size(); i += 1) {
-      ProcessModule(&modules_[i]);
+      ProcessModule(modules_[i].get());
     }
 
     for (auto& m : modules_) {
-      m.InferTypes(solver_);
+      m->InferTypes(solver_);
     }
 
     if (test_build) {
-      FMT_ASSERT(modules_.back().GetName() == main_module_,
+      FMT_ASSERT(modules_.back()->GetName() == main_module_,
                  "Last module should be the main one");
-      modules_.back().Compile(nullptr);  // CompileTests
+      modules_.back()->Compile(nullptr);  // CompileTests
       return;
     }
 
@@ -183,7 +181,7 @@ class CompilationDriver {
   // For each import map `symbol_name -> module`
   std::unordered_map<std::string_view, Module*> module_of_;
 
-  std::vector<Module> modules_;
+  std::vector<std::unique_ptr<Module>> modules_;
   std::vector<lex::Lexer> lexers_;
 
   bool test_build = false;

@@ -3,6 +3,7 @@
 
 #include <ast/error_at_location.hpp>
 
+#include <cassert>
 #include <unordered_map>
 
 namespace types::constraints {
@@ -70,8 +71,26 @@ bool ConstraintSolver::UnifyUnderlyingTypes(Type* a, Type* b) {
       auto& b_mem = b->as_sum.first;
 
       if (a_mem.size() != b_mem.size()) {
+        // Let's assume typing_context is always defined.
+        //   Otherwise we need to somehow get module full path.
+        //   Which we will, if it will be needed. But if it is not,
+        //   going without passing in here would be more clear,
+        //   more as-is.
+        assert(a->typing_context_ != nullptr);
+        assert(b->typing_context_ != nullptr);
+        // TODO: if such a problem arises, fix it: an error
+        //   may be reported for an imported module, although
+        //   there is no problem there, the module on it's own
+        //   compiles fine, it's just the module that imports it.
+        //   We have to select the context which module has the lowest
+        //   depth. Or just prefet the main module, at the very least.
+        //   Because if it is not the main module, place error is reported
+        //   in pair module-imported_module doesn't matter for now as it
+        //   will be as an error of the first item in this pair. It will
+        //   matter if and when stack trace of errors will be adopted.
+
         throw ErrorAtLocation(
-          a->typing_context_ != nullptr ? a->typing_context_->location : lex::Location(0, 0),
+          a->typing_context_->location,
           fmt::format("Inference error: struct size mismatch between {} and {}", a->Format(), b->Format())
         );
       }
@@ -80,8 +99,26 @@ bool ConstraintSolver::UnifyUnderlyingTypes(Type* a, Type* b) {
 
       for (size_t i = 0; i < a_mem.size(); i++) {
         if (a_mem[i].field != b_mem[i].field) {
+          // Let's assume typing_context is always defined.
+          //   Otherwise we need to somehow get module full path.
+          //   Which we will, if it will be needed. But if it is not,
+          //   going without passing in here would be more clear,
+          //   more as-is.
+          assert(a->typing_context_ != nullptr);
+          assert(b->typing_context_ != nullptr);
+          // TODO: if such a problem arises, fix it: an error
+          //   may be reported for an imported module, although
+          //   there is no problem there, the module on it's own
+          //   compiles fine, it's just the module that imports it.
+          //   We have to select the context which module has the lowest
+          //   depth. Or just prefet the main module, at the very least.
+          //   Because if it is not the main module, place error is reported
+          //   in pair module-imported_module doesn't matter for now as it
+          //   will be as an error of the first item in this pair. It will
+          //   matter if and when stack trace of errors will be adopted.
+
           throw ErrorAtLocation(
-            a->typing_context_ != nullptr ? a->typing_context_->location : lex::Location(0, 0),
+            a->typing_context_->location,
             fmt::format(
               "Inference error: Inference error: sum field mismatch between {} and {}, field index {}, {} != {}",
               a->Format(),

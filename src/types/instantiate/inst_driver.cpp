@@ -6,6 +6,8 @@
 
 #include <lex/token.hpp>
 
+#include <cassert>
+
 
 namespace types::instantiate {
 
@@ -200,8 +202,15 @@ bool TemplateInstantiator::BuildSubstitution(Type* poly, Type* mono,
       auto& pack2 = mono->as_fun.param_pack;
 
       if (pack.size() != pack2.size()) {
+        // Let's assume typing_context is always defined.
+        //   Otherwise we need to somehow get module full path.
+        //   Which we will, if it will be needed. But if it is not,
+        //   going without passing in here would be more clear,
+        //   more as-is.
+        assert(poly->typing_context_ != nullptr);
+
         throw ErrorAtLocation(
-          poly->typing_context_ != nullptr ? poly->typing_context_->location : lex::Location(0, 0),
+          poly->typing_context_->location,
           fmt::format("Function unification size mismatch between {} and {}", poly->Format(), mono->Format())
         );
       }

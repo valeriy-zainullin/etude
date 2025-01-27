@@ -50,6 +50,7 @@ types::Type* Parser::ParseStructType() {
   while (Matches(lex::TokenType::IDENTIFIER)) {
     fields.push_back(types::Member{
         .field = lexer_.GetPreviousToken().GetName(),
+        .name = lexer_.GetPreviousToken(),
     });
 
     Consume(lex::TokenType::COLON);
@@ -90,6 +91,7 @@ types::Type* Parser::ParseSumType() {
 
     fields.push_back(types::Member{
         .field = lexer_.GetPreviousToken().GetName(),
+        .name = lexer_.GetPreviousToken()
     });
 
     if (Matches(lex::TokenType::COLON)) {

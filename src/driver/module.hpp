@@ -14,6 +14,7 @@
 
 #include <lex/location.hpp>
 
+#include <cassert>
 #include <filesystem>
 
 //////////////////////////////////////////////////////////////////////
@@ -24,23 +25,19 @@ class Module {
  public:
   friend class Parser;
 
-  Module()
-    : global_context(std::make_unique<ast::scope::Context>(ast::scope::Context{
+  Module(std::filesystem::path abs_path)
+    : abs_path_(std::move(abs_path))
+    , global_context(std::make_unique<ast::scope::Context>(ast::scope::Context{
       .name = std::string_view(),
       .unit = *this,
-      .location = lex::Location{0, 0}
+      .location = lex::Location{this, 0, 0}
     }))
-  {}
+  {
+    assert(abs_path_.is_absolute());
+  }
 
   Module(Module&&) = default;
   Module(const Module&) = delete;
-
-  void SetName(std::string_view name) {
-    name_ = name;
-
-    namespace fs = std::filesystem;
-    full_path = std::string(fs::absolute(fs::path(name_))) + ".et";
-  }
 
   void BuildContext(CompilationDriver* driver) {
     global_context->driver = driver;
@@ -104,13 +101,24 @@ class Module {
     }
   }
 
-  std::string GetPath() {
-    return full_path;
+  std::filesystem::path GetAbsPath() const {
+    return abs_path_;
+  }
+
+private:
+  // Only accessible for CompilationDriver to set the name
+  //   after the module was parsed.
+  // This hints users that name has the right value, when
+  //   they see it. Because it's done early and no one
+  //   else can touch it to make it wrong.
+  friend class CompilationDriver;
+  void SetName(std::string_view name) {
+    name_ = name;
   }
 
  private:
   std::string_view name_;
-  std::string full_path;
+  std::filesystem::path abs_path_;
 
   std::unique_ptr<ast::scope::Context> global_context;
 

@@ -349,7 +349,7 @@ Type* SubstituteParameters(Type* subs, const Map& map) {
 
       for (auto& p : pack) {
         result.push_back(
-            Member{.field = p.field, .ty = SubstituteParameters(p.ty, map)});
+            Member{.field = p.field, .name = p.name, .ty = SubstituteParameters(p.ty, map)});
       }
 
       auto ty = MakeStructType(std::move(result));
@@ -363,10 +363,11 @@ Type* SubstituteParameters(Type* subs, const Map& map) {
       auto& pack = subs->as_sum.first;
 
       for (auto& p : pack) {
-        result.push_back(Member{.field = p.field,
-                                .ty = p.ty  //
-                                          ? SubstituteParameters(p.ty, map)
-                                          : nullptr});
+        result.push_back(Member{
+          .field = p.field,
+          .name = p.name,
+          .ty = p.ty  ? SubstituteParameters(p.ty, map) : nullptr
+        });
       }
 
       auto ty = MakeSumType(std::move(result));
@@ -530,6 +531,7 @@ Type* Instantinate(Type* ty, KnownParams& map) {
       for (auto& p : pack) {
         args.push_back(Member{
             .field = p.field,
+            .name = p.name,
             .ty = Instantinate(p.ty, map),
         });
       }
@@ -546,6 +548,7 @@ Type* Instantinate(Type* ty, KnownParams& map) {
       for (auto& p : pack) {
         args.push_back(Member{
             .field = p.field,
+            .name = p.name,
             .ty = Instantinate(p.ty, map),
         });
       }
