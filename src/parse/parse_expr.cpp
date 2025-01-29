@@ -304,8 +304,9 @@ auto Parser::ParseDesignatedList()
     Consume(lex::TokenType::ASSIGN);
 
     initializers.push_back({
-        .field = field,
+        .field = field.GetName(),
         .init = ParseExpression(),
+        .name = field,
     });
 
     if (!Matches(lex::TokenType::COMMA)) {
@@ -501,6 +502,7 @@ Expression* Parser::ParseSignleFieldCompound() {
           {
               ident.GetName(),
               TagOnly() ? nullptr : ParseExpression(),
+              ident,
           },
       },
   };
