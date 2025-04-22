@@ -9,6 +9,7 @@
 #include <filesystem>
 #include <iostream>
 #include <istream>
+#include <sstream>
 #include <vector>
 #include <span>
 
