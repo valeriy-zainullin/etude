@@ -19,6 +19,15 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release")
         set(CMAKE_FIND_LIBRARY_SUFFIXES .lib)
     else()
         set(CMAKE_FIND_LIBRARY_SUFFIXES .a)
+    endif()
+    # If not compiling for windows with msvc (mingw will work with -static)
+    #   and not compiling for APPLE (necessary libraries should be static
+    #   even without this, so we should depend on system libraries only,
+    #   ldd step in CI will let us see that).
+    # On apple it's not possible to build fully static.
+    #   https://stackoverflow.com/questions/3801011/ld-library-not-found-for-lcrt0-o-on-osx-10-6-with-gcc-clan>
+    #   https://stackoverflow.com/a/54890434
+    if (NOT (WIN32 AND MSVC) AND NOT APPLE)
         add_compile_options(-static)
         add_link_options(-static)
     endif()
