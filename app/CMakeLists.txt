@@ -6,5 +6,7 @@ set_target_properties(etc PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}"
 )
 
-target_compile_options(etc PRIVATE -fsanitize=undefined)
-target_link_options(etc PRIVATE -fsanitize=undefined)
+if(NOT WIN32)
+  target_compile_options(etc PRIVATE -fsanitize=undefined)
+  target_link_options(etc PRIVATE -fsanitize=undefined)
+endif()
