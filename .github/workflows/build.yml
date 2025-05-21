@@ -37,7 +37,7 @@ jobs:
           ldd etc || true # Just for logging
           (LC_ALL=C ldd etc 2>&1) | grep 'not a dynamic executable' >/dev/null # If not found, grep returns 1
       - name: Make archive
-        run: 7z a package.linux-arm64.zip etc stdlib
+        run: 7z a package.linux-arm64.zip etc stdlib etc_stdlib.bash
       - uses: actions/upload-artifact@v4
         with:
           name: package.linux-arm64
@@ -63,7 +63,7 @@ jobs:
           ldd etc || true # Just for logging
           (LC_ALL=C ldd etc 2>&1) | grep 'not a dynamic executable' >/dev/null # If not found, grep returns 1
       - name: Make archive
-        run: 7z a package.linux-amd64.zip etc stdlib
+        run: 7z a package.linux-amd64.zip etc stdlib etc_stdlib.bash
       - uses: actions/upload-artifact@v4
         with:
           name: package.linux-amd64
@@ -83,11 +83,11 @@ jobs:
       - name: Set up apt packages
         run: sudo apt update && sudo apt install build-essential make ninja-build cmake mingw-w64
       - name: Build
-        run: cmake -B build -DCMAKE_BUILD_TYPE=Release . && cmake --build build
+        run: cmake -B build --toolchain=toolchain-mingw-w64.cmake -DCMAKE_BUILD_TYPE=Release . && cmake --build build
       - name: List shared object dependencies (should only have system dlls)
         run: (LC_ALL=C objdump -p etc.exe) | grep 'DLL Name'
       - name: Make archive
-        run: 7z a package.windows-amd64.zip etc.exe stdlib
+        run: 7z a package.windows-amd64.zip etc.exe stdlib etc_stdlib.bat
       - uses: actions/upload-artifact@v4
         with:
           name: package.windows-amd64
@@ -112,7 +112,7 @@ jobs:
       - name: List shared object dependencies (should only use system dylibs)
         run: otool -L etc
       - name: Make archive
-        run: 7z a package.macos-amd64.zip etc stdlib
+        run: 7z a package.macos-amd64.zip etc stdlib etc_stdlib.bash
       - uses: actions/upload-artifact@v4
         with:
           name: package.macos-amd64
@@ -135,10 +135,12 @@ jobs:
         run: cmake -B build -DCMAKE_BUILD_TYPE=Release . && cmake --build build
       - name: List shared object dependencies (should only use system dylibs)
         run: otool -L etc
+      - name: Make archive
+        run: 7z a package.macos-arm64.zip etc stdlib etc_stdlib.bash
       - uses: actions/upload-artifact@v4
         with:
           name: package.macos-arm64
-          path: package.macos-arm64.vsix
+          path: package.macos-arm64.zip
   release:
     runs-on: ubuntu-24.04
     needs:
