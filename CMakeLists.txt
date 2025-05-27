@@ -13,7 +13,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_compile_options(-Wall -Wextra -g -Og)
 
-if(CMAKE_BUILD_TYPE STREQUAL "Release")
+if(NOT "$ENV{BUILD_SANITIZERS}" STREQUAL "1")
     set(BUILD_SHARED_LIBS OFF) # So that it is portable across linuxes.
     if(WIN32 AND MSVC)
         set(CMAKE_FIND_LIBRARY_SUFFIXES .lib)
